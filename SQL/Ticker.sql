@@ -8,4 +8,3 @@ CREATE TABLE Ticker(
   CategoryID as int, --Foreign Key Category.CategoryID
   NetValue as currency
 )
-  
