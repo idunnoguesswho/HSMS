@@ -6,5 +6,6 @@ CREATE TABLE DailyLog(
   ReviewTopic as varchar(100),
   WorkerInput as varchar(255),
   ActionItems as varchar(255),
-  AreaLead as varchar(255)
+  AreaLead as varchar(255),
+  FormTypeID as int --Foreign Key FormType.FormTypeID
   )
