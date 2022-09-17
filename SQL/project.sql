@@ -30,4 +30,6 @@ CREATE TABLE Project(
 	SiteOfficeLocation as varchar(100),
 	LastInspection as DateTime2,
 	QBONameas varchar(100)
+
+	--TODO: Add the tie ins for the Site Specific Manual 
 )

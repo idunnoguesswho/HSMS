@@ -1,9 +1,10 @@
 CREATE TABLE employee(
 EmployeeID int primary key,
-FirstName as varchar(100),
-LastName as varchar(100),
-Email as varchar(150),
-pw as varchar(20),
-dob as date,
-mailingAddress varchar(255)
+FirstName varchar(100),
+LastName varchar(100),
+Email varchar(150),
+pw varchar(20),
+dob datetime2,
+mailingAddress varchar(255),
+LoginName varchar(20)
 )
