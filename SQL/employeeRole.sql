@@ -7,5 +7,6 @@ CREATE TABLE employeeRole(
   endDate date,
   SupervisorID int, --FK: Employee.EmployeeID
   LOARate currency,
-  ExpensesAllowed bit
+  ExpensesAllowed bit,
+  DateApproved datetime2
 )
