@@ -23,8 +23,8 @@ CREATE TABLE employee(
   --Federal TD1 Form 	Provincial TD1 Form	
   PayrollPolicyAcceptance varchar(3),
   DisciplinePolicyAcceptance varchar(3),
-  Harassment-FreeWorkplacePolicyAcceptance varchar(3),
-  Drug-FreeWorkplaceAcceptance varchar(3),
+  HarassmentFreeWorkplacePolicyAcceptance varchar(3),
+  DrugFreeWorkplaceAcceptance varchar(3),
   HSMSAcceptance varchar(3),
   WorkplaceInjuryReductionAcceptance varchar(3),
   EthicalLegalStandardAcceptance varchar(3),
@@ -34,5 +34,6 @@ CREATE TABLE employee(
   VisibleMinority bit,
   Disability bit,
   DrugAndAlcoholAcceptance varchar(3),
-  IsSupervisor bit
+  IsSupervisor bit,
+  SupervisorID int --FK:Employee.EmployeeID, <>Self
 )
