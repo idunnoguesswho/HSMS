@@ -22,3 +22,8 @@ VALUES ('FH Inspection', 0,100,0, 'EA')
 INSERT INTO FumeHoodItems  (Description, CostPerItem, PricePerItem, QuantityOnHand, UnitName)
 VALUES ('FH Service Hour', 80,125,0, 'HR')
 
+INSERT INTO FumeHoodItems  (Description, CostPerItem, PricePerItem, QuantityOnHand, UnitName)
+VALUES ('KM Travel', 0.89,1.00,0, 'KM')
+
+INSERT INTO FumeHoodItems  (Description, CostPerItem, PricePerItem, QuantityOnHand, UnitName)
+VALUES ('Logistics (Cost)', 1,1.1,0, 'EA')
