@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign in — HSMS</title>
+<link rel="stylesheet" href="hsms.css">
+<style>
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .login-card {
+    width: 100%;
+    max-width: 340px;
+    padding: 28px 24px;
+    border-radius: 12px;
+    background: var(--panel, #fff);
+    box-shadow: 0 8px 30px rgba(0,0,0,.12);
+  }
+  .login-card h1 { font-size: 1.2rem; margin-bottom: 4px; text-align: center; }
+  .login-card p.sub { color: var(--muted, #666); font-size: .85rem; text-align: center; margin-bottom: 20px; }
+  .login-card input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 1rem;
+    margin-bottom: 12px;
+  }
+  .login-card button {
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 8px;
+    background: var(--navy, #1c3d5a);
+    color: white;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .login-card button:disabled { opacity: .6; cursor: default; }
+  .error { color: #c0392b; font-size: .85rem; margin-bottom: 12px; min-height: 1.1em; text-align: center; }
+</style>
+</head>
+<body>
+
+<form class="login-card" id="loginForm" autocomplete="off">
+  <h1>🛡️ HSMS</h1>
+  <p class="sub">Sign in to continue</p>
+  <div class="error" id="loginError"></div>
+  <input type="password" id="password" name="password" placeholder="Password" autofocus required>
+  <button type="submit" id="loginBtn">Sign in</button>
+</form>
+
+<script>
+const form = document.getElementById("loginForm");
+const btn = document.getElementById("loginBtn");
+const errEl = document.getElementById("loginError");
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  errEl.textContent = "";
+  btn.disabled = true;
+  try {
+    const password = document.getElementById("password").value;
+    const res = await fetch("/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.ok) {
+      const next = new URLSearchParams(location.search).get("next") || "/";
+      location.href = next;
+    } else {
+      errEl.textContent = data.error || "Sign in failed.";
+    }
+  } catch {
+    errEl.textContent = "Network error. Try again.";
+  } finally {
+    btn.disabled = false;
+  }
+});
+</script>
+
+</body>
+</html>

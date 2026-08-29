@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — HSMS</title>
+<link rel="stylesheet" href="hsms.css">
+<style>
+  .panel {
+    max-width: 760px;
+    margin: 20px auto;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+  }
+  .panel h2 { font-size: 1.05rem; margin-bottom: 6px; }
+  .panel p.desc { color: var(--muted); font-size: .85rem; margin-bottom: 16px; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: .78rem; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
+  .field input, .field select {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: .9rem;
+    box-sizing: border-box;
+  }
+  .field-row { display: flex; gap: 12px; }
+  .field-row .field { flex: 1; }
+  .btn {
+    padding: 9px 16px;
+    border: none;
+    border-radius: 8px;
+    background: var(--blue);
+    color: white;
+    font-weight: 700;
+    font-size: .85rem;
+    cursor: pointer;
+  }
+  .btn:disabled { opacity: .55; cursor: default; }
+  .btn-danger { background: #dc2626; }
+  .btn-ghost { background: transparent; color: var(--blue); padding: 6px 8px; }
+  details.advanced { margin: 4px 0 14px; }
+  details.advanced summary { font-size: .78rem; color: var(--blue); cursor: pointer; }
+  details.advanced .field-row { margin-top: 10px; }
+  .client-list { list-style: none; padding: 0; margin: 0 0 18px; }
+  .client-list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .client-list li:last-child { border-bottom: none; }
+  .client-name { font-weight: 700; font-size: .88rem; }
+  .client-meta { font-size: .76rem; color: var(--muted); }
+  .status-pill { display: inline-block; font-size: .68rem; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+  .status-ok { background: #dcfce7; color: #166534; }
+  .status-off { background: #fee2e2; color: #991b1b; }
+  #results { margin-top: 16px; font-size: .85rem; }
+  #results table { width: 100%; border-collapse: collapse; }
+  #results th, #results td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee; }
+  .msg { font-size: .82rem; margin-top: 10px; }
+  .msg.err { color: #c0392b; }
+  .empty { color: var(--muted); font-size: .85rem; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <span class="logo">🛡️</span>
+  <div>
+    <h1>DS Home Computing</h1>
+    <p>Admin</p>
+  </div>
+  <nav style="margin-left:auto;">
+    <a href="/" style="color:#fff;opacity:.85;text-decoration:none;font-size:.82rem;">&larr; Back to wiki</a>
+  </nav>
+</header>
+
+<div class="panel">
+  <h2>Clients</h2>
+  <p class="desc">Each client has its own Salus credentials and its own database — imported documents for one client never mix with another's.</p>
+
+  <ul class="client-list" id="clientList"><li class="empty">Loading…</li></ul>
+
+  <form id="addClientForm">
+    <div class="field">
+      <label for="clientName">Client name</label>
+      <input type="text" id="clientName" placeholder="e.g. Acme Construction" required>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="salusClientId">Salus client ID</label>
+        <input type="text" id="salusClientId" placeholder="Optional — can add later">
+      </div>
+      <div class="field">
+        <label for="salusClientSecret">Salus client secret</label>
+        <input type="password" id="salusClientSecret" placeholder="Optional — can add later" autocomplete="new-password">
+      </div>
+    </div>
+    <details class="advanced">
+      <summary>Advanced: non-default Guardian / API URLs</summary>
+      <div class="field-row">
+        <div class="field">
+          <label for="salusTokenUrl">Guardian token URL</label>
+          <input type="text" id="salusTokenUrl" placeholder="https://guardian.beta.salussafety.io/token">
+        </div>
+        <div class="field">
+          <label for="salusApiBase">API base URL</label>
+          <input type="text" id="salusApiBase" placeholder="https://developer.beta.salussafety.io">
+        </div>
+      </div>
+    </details>
+    <button class="btn" type="submit">Add client</button>
+  </form>
+</div>
+
+<div class="panel">
+  <h2>Import from Salus</h2>
+  <p class="desc">Pull document metadata from a client's <a href="https://portal.salussafety.io/" target="_blank" rel="noopener">Salus</a> account into that client's own database.</p>
+
+  <div class="field-row">
+    <div class="field">
+      <label for="clientSelect">Client</label>
+      <select id="clientSelect"></select>
+    </div>
+    <div class="field">
+      <label for="searchTerm">Search term (optional)</label>
+      <input type="text" id="searchTerm" placeholder="e.g. &quot;JSA&quot;, &quot;fire&quot;">
+    </div>
+  </div>
+  <button class="btn" id="importBtn">Import from Salus</button>
+
+  <div id="msg" class="msg"></div>
+  <div id="results"></div>
+</div>
+
+<script>
+let clients = [];
+
+function statusPill(c) {
+  return c.salusConfigured
+    ? '<span class="status-pill status-ok">Salus connected</span>'
+    : '<span class="status-pill status-off">No Salus credentials</span>';
+}
+
+async function loadClients() {
+  const res = await fetch('/api/clients');
+  const data = await res.json();
+  clients = data.clients || [];
+
+  const list = document.getElementById('clientList');
+  list.innerHTML = clients.length
+    ? clients.map(c => `
+        <li>
+          <div style="flex:1;">
+            <div class="client-name">${c.name}</div>
+            <div class="client-meta">${c.docCount} document(s) imported &middot; ${statusPill(c)}</div>
+          </div>
+          <a class="btn btn-ghost" href="/api/clients/${c.id}/grafana-dashboard" download>Generate Grafana dashboard</a>
+          <button class="btn btn-ghost" data-remove="${c.id}">Remove</button>
+        </li>
+      `).join('')
+    : '<li class="empty">No clients yet — add one below.</li>';
+
+  list.querySelectorAll('[data-remove]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Remove this client and its imported data? This cannot be undone.')) return;
+      await fetch(`/api/clients/${btn.dataset.remove}`, { method: 'DELETE' });
+      await loadClients();
+    });
+  });
+
+  const select = document.getElementById('clientSelect');
+  select.innerHTML = clients.length
+    ? clients.map(c => `<option value="${c.id}">${c.name}${c.salusConfigured ? '' : ' (no Salus credentials)'}</option>`).join('')
+    : '<option value="">No clients yet</option>';
+}
+
+document.getElementById('addClientForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const body = {
+    name: document.getElementById('clientName').value,
+    salusClientId: document.getElementById('salusClientId').value,
+    salusClientSecret: document.getElementById('salusClientSecret').value,
+    salusTokenUrl: document.getElementById('salusTokenUrl').value,
+    salusApiBase: document.getElementById('salusApiBase').value,
+  };
+  const res = await fetch('/api/clients', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (res.ok) {
+    e.target.reset();
+    await loadClients();
+  } else {
+    const data = await res.json().catch(() => ({}));
+    alert(data.error || 'Could not add client.');
+  }
+});
+
+document.getElementById('importBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('importBtn');
+  const msg = document.getElementById('msg');
+  const results = document.getElementById('results');
+  const clientId = document.getElementById('clientSelect').value;
+  const search = document.getElementById('searchTerm').value;
+
+  if (!clientId) {
+    msg.className = 'msg err';
+    msg.textContent = 'Add a client first.';
+    return;
+  }
+
+  btn.disabled = true;
+  msg.className = 'msg';
+  msg.textContent = 'Importing…';
+  results.innerHTML = '';
+
+  try {
+    const res = await fetch('/api/salus/import', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ clientId, search }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      msg.className = 'msg err';
+      msg.textContent = data.error || 'Import failed.';
+      return;
+    }
+
+    const docs = data.results?.data || data.results?.items || data.results || [];
+    if (!Array.isArray(docs) || docs.length === 0) {
+      msg.textContent = 'No documents returned.';
+      await loadClients();
+      return;
+    }
+
+    msg.textContent = `${docs.length} document(s) imported.`;
+    const rows = docs.map(d => `<tr><td>${d.name || d.id || '—'}</td><td>${d.path || ''}</td><td>${d.updated_at || d.updatedAt || ''}</td></tr>`).join('');
+    results.innerHTML = `<table><thead><tr><th>Name</th><th>Path</th><th>Updated</th></tr></thead><tbody>${rows}</tbody></table>`;
+    await loadClients();
+  } catch {
+    msg.className = 'msg err';
+    msg.textContent = 'Network error.';
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+loadClients();
+</script>
+
+</body>
+</html>
